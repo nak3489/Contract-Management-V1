@@ -257,7 +257,8 @@
       <div class="bg-gradient-to-br from-orange-400 to-orange-500 rounded-2xl shadow-md p-6 text-white card-hover">
        <div class="flex items-center justify-between">
         <div>
-         <p class="text-orange-100 text-sm mb-1">ใกล้หมดอายุ (60 วัน)</p>
+         <!-- CHANGE 1: เปลี่ยนข้อความ UI จาก 60 วัน เป็น 90 วัน -->
+         <p class="text-orange-100 text-sm mb-1">ใกล้หมดอายุ (90 วัน)</p>
          <h3 class="text-4xl font-bold" id="expiringContracts">0</h3>
         </div><i class="fas fa-exclamation-triangle text-5xl text-orange-200"></i>
        </div>
@@ -808,7 +809,13 @@
         currency: amount => new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', minimumFractionDigits: 0 }).format(amount || 0),
         date: dateString => { try { return new Date(dateString).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' }); } catch { return ''; } }
     };
-    const getContractStatus = endDate => { const d = Math.ceil((new Date(endDate) - new Date()) / 864e5); return d < 1 ? 'expired' : (d <= 60 ? 'expiring' : 'active'); };
+
+    // CHANGE 2: เปลี่ยนตรรกะการคำนวณ status จาก 60 เป็น 90 วัน
+    const getContractStatus = endDate => { 
+        const d = Math.ceil((new Date(endDate) - new Date()) / 864e5); 
+        return d < 1 ? 'expired' : (d <= 90 ? 'expiring' : 'active'); 
+    };
+
     const getDaysRemaining = endDate => Math.ceil((new Date(endDate) - new Date()) / 864e5);
     const getStatusBadge = status => ({ active: '<span class="badge badge-active">ยังไม่ครบกำหนด</span>', expiring: '<span class="badge badge-expiring">ใกล้หมดอายุ</span>', expired: '<span class="badge badge-expired">หมดอายุแล้ว</span>' })[status] || '';
 
@@ -946,11 +953,11 @@
             document.getElementById('expiringContractsTable').innerHTML = expiringList.length ? expiringList.map(c => `<tr><td>${c.branchId}</td><td>${c.name}</td><td>${format.date(c.endDate)}</td><td>${getDaysRemaining(c.endDate)} วัน</td><td>${getStatusBadge(getContractStatus(c.endDate))}</td></tr>`).join('') : `<tr><td colspan="5" class="text-center text-gray-500">ไม่มีสัญญาที่ใกล้หมดอายุ</td></tr>`;
             if (CONFIG.statusChart) CONFIG.statusChart.destroy();
             
-            // --- START: ‼️ แก้ไข (ปรับป้ายกำกับและขนาดกล่อง) ‼️ ---
+            // CHANGE 3: เปลี่ยน Label ในกราฟเป็น 90 วัน
             CONFIG.statusChart = new Chart(document.getElementById('statusChart'), { 
                 type: 'doughnut', 
                 data: { 
-                    labels: ['ยังไม่ครบกำหนด', 'ใกล้หมดอายุ (60 วัน)', 'หมดอายุแล้ว'], // <-- คืนค่า (60 วัน)
+                    labels: ['ยังไม่ครบกำหนด', 'ใกล้หมดอายุ (90 วัน)', 'หมดอายุแล้ว'], 
                     datasets: [{ 
                         data: [statusCounts.active, statusCounts.expiring, statusCounts.expired], 
                         backgroundColor: ['#4DB6AC', '#FFA726', '#EF5350'], 
@@ -962,16 +969,15 @@
                     cutout: '50%', 
                     plugins: { 
                         legend: { 
-                            position: 'top', // <-- คงไว้ที่ด้านบน
+                            position: 'top', 
                             labels: { 
                                 font: { family: 'Kanit' },
-                                boxWidth: 14 // <-- ลดขนาดกล่องสี
+                                boxWidth: 14 
                             } 
                         } 
                     } 
                 } 
             });
-            // --- END: ‼️ แก้ไข ‼️ ---
 
             const districtData = contracts.reduce((acc, c) => { acc[c.district] = (acc[c.district] || 0) + c.monthlyRent; return acc; }, {});
             const sortedDistricts = Object.keys(districtData).sort();
